@@ -225,7 +225,7 @@ const modules = [
         if (attempts >= MAX_ATTEMPTS) break;
       } while (carries > targetCarries);
       if (carries > targetCarries+1) console.warn(`multiply generator: gave up after ${attempts} attempts (target ${targetCarries}, got ${carries})`);
-      return { text: `${a} x ${b} = ? (complexity ${carries})`, answer: String(a*b) };
+      return { text: `${a} x ${b} = ?`, answer: String(a*b) };
     }
   }
   ,
