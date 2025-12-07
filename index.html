@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Math Game for Kids</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Landing -->
+    <section id="landing" class="screen">
+      <h1 class="title">Math Games</h1>
+      <p class="subtitle">Choose a game and have fun! (Ages 9+)</p>
+      <div id="modules" class="modules"></div>
+    </section>
+
+    <!-- Game -->
+    <section id="game" class="screen hidden">
+      <div class="game-header">
+        <button id="backToLanding" class="btn small">Back</button>
+        <div class="module-title" id="moduleTitle"></div>
+        <div class="score" id="scoreDisplay">Score: 0</div>
+      </div>
+
+      <div class="question-area">
+        <div id="timerBar" class="timer-bar"><div id="timerProgress"></div></div>
+        <div id="questionText" class="question">0 + 0 = ?</div>
+        <div id="inputDisplay" class="input-display">—</div>
+        <div id="feedback" class="feedback hidden"></div>
+      </div>
+
+      <div class="numpad" id="numpad"></div>
+    </section>
+
+    <!-- Results -->
+    <section id="results" class="screen hidden">
+      <h2>Module Complete</h2>
+      <p id="resultsText" class="results-text"></p>
+      <button id="returnHome" class="btn">Return to Modules</button>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
