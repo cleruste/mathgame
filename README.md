@@ -35,9 +35,30 @@ git remote add origin git@github.com:YOUR_USER/YOUR_REPO.git
 git push -u origin main
 ```
 
-2. Publish with GitHub Pages:
-- In the repository Settings → Pages, select Branch `main` and folder `/` (root), then save.
-- Your site will be available at `https://<your-username>.github.io/<repo-name>/`.
+2. Publish with GitHub Pages (two options):
+
+- Option A — Serve from `main` branch root:
+	- In the repository Settings → Pages, select Branch `main` and folder `/` (root), then save.
+
+- Option B — Serve from `gh-pages` branch:
+	- Create a `gh-pages` branch locally that points to the static commit (example below), then push it to the remote.
+	- To create a `gh-pages` branch locally that mirrors the current commit:
+
+```bash
+# Commit any outstanding changes first
+git add .
+git commit -m "Prepare static site"
+# Create or update local gh-pages branch to current commit
+git branch -f gh-pages HEAD
+```
+
+	- Then push the branch to your remote:
+
+```bash
+git push -u origin gh-pages
+```
+
+	- In GitHub Settings → Pages, select branch `gh-pages` and folder `/`.
 
 Optional quick deploy script
 

@@ -173,6 +173,20 @@ function finishModule() {
   showScreen('results');
   const percent = Math.round((state.score / QUESTIONS_PER_MODULE) * 100);
   resultsTextEl.textContent = `You got ${state.score} out of ${QUESTIONS_PER_MODULE} — ${percent}%`;
+  // Save high score per-module in localStorage
+  try {
+    const key = `mathgame_highscore_${state.module.id}`;
+    const prev = Number(localStorage.getItem(key) || '0');
+    if (state.score > prev) {
+      localStorage.setItem(key, String(state.score));
+    }
+    const best = localStorage.getItem(key);
+    const bestEl = document.createElement('div');
+    bestEl.style.marginTop = '8px';
+    bestEl.style.fontWeight = '700';
+    bestEl.textContent = `Best for this module: ${best} / ${QUESTIONS_PER_MODULE}`;
+    resultsTextEl.appendChild(bestEl);
+  } catch (e) { /* ignore storage errors */ }
 }
 
 // Numpad
