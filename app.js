@@ -2,9 +2,29 @@
 // Question generation logic runs entirely in the browser so the site
 // can be hosted as a static site (GitHub Pages, Netlify, etc.).
 
-// Configuration
-const QUESTIONS_PER_MODULE = 10;
-const TIME_PER_QUESTION_MS = 10_000; // 10 seconds
+// Configuration (defaults are used if no saved preference exists)
+const DEFAULT_QUESTIONS_PER_MODULE = 10;
+const DEFAULT_TIME_PER_QUESTION_SEC = 10; // seconds
+
+function getNumQuestions() {
+  return Number(localStorage.getItem('mathgame_num_questions') || DEFAULT_QUESTIONS_PER_MODULE);
+}
+function setNumQuestions(n) {
+  const v = Math.max(1, Math.floor(Number(n) || DEFAULT_QUESTIONS_PER_MODULE));
+  localStorage.setItem('mathgame_num_questions', String(v));
+}
+
+function getTimePerQuestionSec() {
+  return Number(localStorage.getItem('mathgame_time_per_question_sec') || DEFAULT_TIME_PER_QUESTION_SEC);
+}
+function setTimePerQuestionSec(s) {
+  const v = Math.max(1, Math.floor(Number(s) || DEFAULT_TIME_PER_QUESTION_SEC));
+  localStorage.setItem('mathgame_time_per_question_sec', String(v));
+}
+
+function getTimePerQuestionMs() {
+  return getTimePerQuestionSec() * 1000;
+}
 
 // App state
 let state = {
@@ -33,6 +53,8 @@ const numpadEl = document.getElementById('numpad');
 const backBtn = document.getElementById('backToLanding');
 const returnHomeBtn = document.getElementById('returnHome');
 const resultsTextEl = document.getElementById('resultsText');
+const numQuestionsInput = document.getElementById('numQuestionsInput');
+const timePerQuestionInput = document.getElementById('timePerQuestionInput');
 
 // Fetch modules from backend and render
 // Local modules: add new modules here. Each module must provide
@@ -73,7 +95,7 @@ function renderModules() {
     const card = document.createElement('div');
     card.className = 'module-card';
     card.tabIndex = 0;
-    card.innerHTML = `<h3>${m.title}</h3><p>${QUESTIONS_PER_MODULE} questions • ${TIME_PER_QUESTION_MS/1000}s each</p>`;
+    card.innerHTML = `<h3>${m.title}</h3><p>${getNumQuestions()} questions • ${getTimePerQuestionSec()}s each</p>`;
     card.addEventListener('click', () => startModule(m));
     card.addEventListener('keydown', (e) => { if (e.key === 'Enter') startModule(m); });
     modulesEl.appendChild(card);
@@ -100,7 +122,7 @@ function nextQuestion() {
   feedbackEl.className = 'feedback hidden';
   state.currentAnswer = '';
   updateInputDisplay();
-  if (state.questionIndex >= QUESTIONS_PER_MODULE) {
+  if (state.questionIndex >= getNumQuestions()) {
     finishModule();
     return;
   }
@@ -115,7 +137,7 @@ function startTimer() {
   clearInterval(state.timer);
   state.timerStart = Date.now();
   timerProgressEl.style.width = '100%';
-  const total = TIME_PER_QUESTION_MS;
+  const total = getTimePerQuestionMs();
   state.timer = setInterval(() => {
     const elapsed = Date.now() - state.timerStart;
     const pct = Math.max(0, 100 - (elapsed / total * 100));
@@ -171,8 +193,9 @@ function showFeedback(correct, timedOut) {
 
 function finishModule() {
   showScreen('results');
-  const percent = Math.round((state.score / QUESTIONS_PER_MODULE) * 100);
-  resultsTextEl.textContent = `You got ${state.score} out of ${QUESTIONS_PER_MODULE} — ${percent}%`;
+  const totalQ = getNumQuestions();
+  const percent = Math.round((state.score / totalQ) * 100);
+  resultsTextEl.textContent = `You got ${state.score} out of ${totalQ} — ${percent}%`;
   // Save high score per-module in localStorage
   try {
     const key = `mathgame_highscore_${state.module.id}`;
@@ -184,7 +207,7 @@ function finishModule() {
     const bestEl = document.createElement('div');
     bestEl.style.marginTop = '8px';
     bestEl.style.fontWeight = '700';
-    bestEl.textContent = `Best for this module: ${best} / ${QUESTIONS_PER_MODULE}`;
+    bestEl.textContent = `Best for this module: ${best} / ${getNumQuestions()}`;
     resultsTextEl.appendChild(bestEl);
   } catch (e) { /* ignore storage errors */ }
 }
@@ -240,6 +263,31 @@ returnHomeBtn.addEventListener('click', () => {
 });
 
 // Boot
+// Initialize settings UI and boot the app
+function initSettings() {
+  try {
+    if (numQuestionsInput) {
+      numQuestionsInput.value = String(getNumQuestions());
+      numQuestionsInput.addEventListener('change', (e) => {
+        const v = Number(e.target.value) || DEFAULT_QUESTIONS_PER_MODULE;
+        setNumQuestions(Math.max(1, Math.floor(v)));
+        renderModules();
+      });
+    }
+    if (timePerQuestionInput) {
+      timePerQuestionInput.value = String(getTimePerQuestionSec());
+      timePerQuestionInput.addEventListener('change', (e) => {
+        const v = Number(e.target.value) || DEFAULT_TIME_PER_QUESTION_SEC;
+        setTimePerQuestionSec(Math.max(1, Math.floor(v)));
+        renderModules();
+      });
+    }
+  } catch (err) {
+    console.error('Settings initialization failed', err);
+  }
+}
+
+initSettings();
 renderModules();
 createNumpad();
 showScreen('landing');

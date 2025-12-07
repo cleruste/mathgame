@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Math Game for Kids</title>
+  <title>Calcul mental EJM CM1-1</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,7 +11,16 @@
     <!-- Landing -->
     <section id="landing" class="screen">
       <h1 class="title">Math Games</h1>
-      <p class="subtitle">Choose a game and have fun! (Ages 9+)</p>
+      <p class="subtitle">Choose a game and have fun!</p>
+      <div id="settings" class="settings">
+        <label class="setting-item">Questions per module:
+          <input id="numQuestionsInput" type="number" min="1" max="100" value="10">
+        </label>
+        <label class="setting-item">Time per question (seconds):
+          <input id="timePerQuestionInput" type="number" min="1" max="60" value="10">
+        </label>
+        <div class="settings-note">Changes saved and persist on refresh.</div>
+      </div>
       <div id="modules" class="modules"></div>
     </section>
 
