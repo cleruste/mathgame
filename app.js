@@ -63,6 +63,7 @@ function countCarryOperations(a, b, op) {
         carry = 0;
       }
     }
+    carryCount += Math.max(da.length + db.length - 4,0)
     return carryCount;
   }
 
@@ -84,6 +85,7 @@ function countCarryOperations(a, b, op) {
         borrow = 0;
       }
     }
+    borrowCount += Math.max(da.length + db.length - 4,0)
     return borrowCount;
   }
 
@@ -91,20 +93,19 @@ function countCarryOperations(a, b, op) {
     if (A === 0 || B === 0) return 0;
     const da = toDigits(A);
     const db = toDigits(B);
-    const res = new Array(da.length + db.length).fill(0);
+    const res = new Array(da.length * db.length).fill(0);
     for (let i = 0; i < da.length; i++) {
       for (let j = 0; j < db.length; j++) {
-        res[i + j] += da[i] * db[j];
+        res[i + da.length*j] += da[i] * db[j] * Math.pow(10, i+j);
       }
     }
-    let carry = 0;
+    let temp = 0;
     let carryCount = 0;
     for (let k = 0; k < res.length; k++) {
-      const total = res[k] + carry;
-      const nextCarry = Math.floor(total / 10);
-      if (nextCarry > 0) carryCount += 1;
-      carry = nextCarry;
+      carryCount += countCarryOperations(temp, res[k], '+');
+      temp += res[k];
     }
+    carryCount += (da.length - 1) + (db.length - 1) + (da.length - 1) * (db.length - 1); // rough estimate for cross-digit carries  
     return carryCount;
   }
 
@@ -203,19 +204,75 @@ const modules = [
     generateQuestion() {
       // generate until the number of carry operations equals selected difficulty
       const targetCarries = getDifficulty();
-      let a, b, product, carries;
+      let baseA, baseB, a, b, product, carries;
       let attempts = 0;
       const MAX_ATTEMPTS = 10000;
+      const SCALE_PROB = 0.35; // chance to scale one operand by 10^k (k up to 3)
       do {
-        a = Math.floor(Math.random() * 50) + 1;
-        b = Math.floor(Math.random() * 50) + 1;
+        baseA = Math.floor(Math.random() * 100) + 2;
+        baseB = Math.floor(Math.random() * 100) + 2;
+        a = baseA;
+        b = baseB;
         product = a * b;
         carries = countCarryOperations(a, b, 'x');
+
+        if (Math.random() < SCALE_PROB) {
+            const k = Math.floor(Math.random() * 3) + 1; // 1..3
+            b = b * Math.pow(10, k);
+            carries += 1;
+    }
         attempts += 1;
         if (attempts >= MAX_ATTEMPTS) break;
       } while (carries > targetCarries);
-      if (carries > targetCarries) console.warn(`addition generator: gave up after ${attempts} attempts (target ${targetCarries}, got ${carries})`);
-      return { text: `${a} x ${b} = ?`, answer: String(product) };
+      if (carries > targetCarries+1) console.warn(`multiply generator: gave up after ${attempts} attempts (target ${targetCarries}, got ${carries})`);
+      return { text: `${a} x ${b} = ? (complexity ${carries})`, answer: String(a*b) };
+    }
+  }
+  ,
+  {
+    id: 'fraction',
+    title: 'Fraction',
+    generateQuestion() {
+      // generate q and r like the multiply module (1..50, sometimes scaled by 10^k)
+      const targetCarries = getDifficulty();
+      let p, q, r, N, carries;
+      let attempts = 0;
+      const MAX_ATTEMPTS = 10000;
+      const SCALE_PROB = 0.35; // chance to scale one operand by 10^k (k up to 3)
+      do {
+        q = Math.floor(Math.random() * 7) + 2;
+        r = Math.floor(Math.random() * 100) + 2;
+        
+        carries = countCarryOperations(q, r, 'x');
+
+        if (Math.random() < SCALE_PROB) {
+            const k = Math.floor(Math.random() * 3) + 1; // 1..3
+            r = r * Math.pow(10, k);
+            carries += 1;
+        }
+        N = q * r;
+
+        p = Math.floor(Math.random() * (q-1)) + 1;
+        carries += countCarryOperations(p, r, 'x');
+
+        attempts += 1;
+        if (attempts >= MAX_ATTEMPTS) break;
+      } while (carries > targetCarries);
+      if (carries > targetCarries+1) console.warn(`multiply generator: gave up after ${attempts} attempts (target ${targetCarries}, got ${carries})`);
+
+      // render as a vertical fraction (numerator above denominator)
+      const html = `
+  <div class="fraction-expression">
+    <span class="multiplier">${N} ×</span>
+    <div class="fraction">
+      <span class="numerator">${p}</span>
+      <span class="bar"></span>
+      <span class="denominator">${q}</span>
+    </div>
+  </div>
+`;
+
+      return { html, answer: String(N*p/q) };
     }
   }
 ];
@@ -265,7 +322,12 @@ function nextQuestion() {
   }
   const q = state.module.generateQuestion();
   state.currentCorrectAnswer = String(q.answer);
-  questionTextEl.textContent = q.text;
+  // support modules that return `html` for richer rendering (e.g. fraction)
+  if (q && q.html) {
+    questionTextEl.innerHTML = q.html;
+  } else {
+    questionTextEl.textContent = q.text || '';
+  }
   state.questionIndex += 1;
   startTimer();
 }

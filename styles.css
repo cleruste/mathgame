@@ -31,6 +31,26 @@ html,body{height:100%;margin:0;font-family:Inter, Roboto, Arial, sans-serif;back
 .module-card{background:var(--card);border-radius:12px;padding:18px 24px;min-width:220px;box-shadow:0 6px 18px rgba(0,0,0,0.08);cursor:pointer;text-align:center}
 .module-card h3{margin:4px 0;font-size:20px}
 .module-card p{margin:0;color:var(--muted)}
+
+/* fraction display for fraction module */
+.fraction {
+  display: inline-block;
+  text-align: center;
+  font-size: 1.6rem;
+  line-height: 1;
+  margin: 4px 0;
+}
+.fraction .numerator,
+.fraction .denominator {
+  display: block;
+  padding: 2px 6px;
+}
+.fraction .bar {
+  display: block;
+  border-top: 2px solid #111;
+  margin: 2px 0;
+  height: 0;
+}
 /* Difficulty label colors */
 .diff-easy{color:var(--success);font-weight:700}
 .diff-hard{color:var(--danger);font-weight:700}
