@@ -1,0 +1,10 @@
+staticSites:
+  - name: mathgame
+    # Replace the repo URL with your repository when creating the service
+    repo: https://github.com/cleruste/mathgame
+    branch: main
+    # No build step required for this simple static site; leave empty or set to a build command
+    buildCommand: ""
+    # Render will publish the folder produced by the build step; our site lives at the repo root
+    publishPath: "."
+    plan: free

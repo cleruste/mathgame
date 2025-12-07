@@ -73,6 +73,28 @@ Notes
 - The frontend now contains modules in `app.js`. Add new modules by editing the `modules` array — each module must provide `id`, `title`, and `generateQuestion()` that returns `{ text, answer }`.
 - If you later want a backend (server-side question generation), host the Python `server.py` elsewhere (Heroku/Render) and change `app.js` to fetch from that API instead.
 
+Deploy to Render (static site)
+
+This repository is ready to deploy to Render as a static site. Render will serve the static files and auto-deploy on pushes.
+
+Quick steps (UI):
+
+1. Push your repo to GitHub if you haven't already.
+2. Go to https://dashboard.render.com and sign in.
+3. Choose "New" → "Static Site".
+4. Connect your GitHub repo (`cleruste/mathgame`) and select the `main` branch.
+5. Set the **Build Command** to empty (this site needs no build) or a build command if you add one later.
+6. Set the **Publish Directory** to `.` (the repo root), then create the site.
+
+Using the included `render.yaml` (Infrastructure as Code):
+
+- The repository contains `render.yaml` which describes a `staticSite` entry. When you create the service in Render and connect the repo, Render will detect `render.yaml` and use it to configure the service. Edit the `repo` field in `render.yaml` if you want the file to include the repository URL.
+
+Notes about Render
+- The site is fully static — Render will host HTML/CSS/JS and automatically serve `index.html`.
+- For larger sites with build steps (React/Vite/etc.) set `buildCommand` and update `publishPath` to the build output (for example `build` or `dist`).
+- If you later add a backend (Python API), consider deploying the backend as a separate Render "Web Service" and update `app.js` to call that API.
+
 Add a new module
 
 Edit `app.js` and add another object to the `modules` array with fields:
