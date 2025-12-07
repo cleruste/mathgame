@@ -55,6 +55,11 @@ const returnHomeBtn = document.getElementById('returnHome');
 const resultsTextEl = document.getElementById('resultsText');
 const numQuestionsInput = document.getElementById('numQuestionsInput');
 const timePerQuestionInput = document.getElementById('timePerQuestionInput');
+const openSettingsBtn = document.getElementById('openSettingsBtn');
+const settingsPanel = document.getElementById('settingsPanel');
+const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+const resetHighscoresBtn = document.getElementById('resetHighscoresBtn');
 
 // Fetch modules from backend and render
 // Local modules: add new modules here. Each module must provide
@@ -271,7 +276,6 @@ function initSettings() {
       numQuestionsInput.addEventListener('change', (e) => {
         const v = Number(e.target.value) || DEFAULT_QUESTIONS_PER_MODULE;
         setNumQuestions(Math.max(1, Math.floor(v)));
-        renderModules();
       });
     }
     if (timePerQuestionInput) {
@@ -279,7 +283,6 @@ function initSettings() {
       timePerQuestionInput.addEventListener('change', (e) => {
         const v = Number(e.target.value) || DEFAULT_TIME_PER_QUESTION_SEC;
         setTimePerQuestionSec(Math.max(1, Math.floor(v)));
-        renderModules();
       });
     }
   } catch (err) {
@@ -291,4 +294,44 @@ initSettings();
 renderModules();
 createNumpad();
 showScreen('landing');
+
+// Settings panel behavior
+function openSettings() {
+  if (settingsPanel) settingsPanel.classList.remove('hidden');
+}
+function closeSettings() {
+  if (settingsPanel) settingsPanel.classList.add('hidden');
+}
+
+if (openSettingsBtn) openSettingsBtn.addEventListener('click', () => {
+  // refresh inputs
+  if (numQuestionsInput) numQuestionsInput.value = String(getNumQuestions());
+  if (timePerQuestionInput) timePerQuestionInput.value = String(getTimePerQuestionSec());
+  openSettings();
+});
+if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', () => closeSettings());
+if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', () => {
+  // save current input values and re-render modules
+  if (numQuestionsInput) setNumQuestions(Number(numQuestionsInput.value) || DEFAULT_QUESTIONS_PER_MODULE);
+  if (timePerQuestionInput) setTimePerQuestionSec(Number(timePerQuestionInput.value) || DEFAULT_TIME_PER_QUESTION_SEC);
+  renderModules();
+  closeSettings();
+});
+
+if (resetHighscoresBtn) resetHighscoresBtn.addEventListener('click', () => {
+  if (!confirm('Reset all high scores? This cannot be undone.')) return;
+  try {
+    const prefix = 'mathgame_highscore_';
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix)) keysToRemove.push(key);
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    alert('High scores reset.');
+  } catch (e) {
+    console.error('Failed to reset highscores', e);
+    alert('Failed to reset highscores');
+  }
+});
 

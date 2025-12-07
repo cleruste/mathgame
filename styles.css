@@ -17,6 +17,8 @@ html,body{height:100%;margin:0;font-family:Inter, Roboto, Arial, sans-serif;back
 .setting-item{font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:flex-start}
 .setting-item input{margin-top:6px;padding:6px 8px;border-radius:6px;border:1px solid #ddd;width:120px}
 .settings-note{width:100%;text-align:center;color:var(--muted);font-size:13px;margin-top:6px}
+.landing-controls{display:flex;justify-content:center;margin-bottom:12px}
+.settings-panel{max-width:520px;margin:0 auto 14px;padding:14px;border-radius:10px;background:var(--card);box-shadow:0 6px 18px rgba(0,0,0,0.06);text-align:center}
 .module-card{background:var(--card);border-radius:12px;padding:18px 24px;min-width:220px;box-shadow:0 6px 18px rgba(0,0,0,0.08);cursor:pointer;text-align:center}
 .module-card h3{margin:4px 0;font-size:20px}
 .module-card p{margin:0;color:var(--muted)}
