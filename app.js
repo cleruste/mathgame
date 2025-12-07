@@ -57,6 +57,7 @@ const numQuestionsInput = document.getElementById('numQuestionsInput');
 const timePerQuestionInput = document.getElementById('timePerQuestionInput');
 const openSettingsBtn = document.getElementById('openSettingsBtn');
 const settingsPanel = document.getElementById('settingsPanel');
+const settingsModal = document.getElementById('settingsModal');
 const saveSettingsBtn = document.getElementById('saveSettingsBtn');
 const closeSettingsBtn = document.getElementById('closeSettingsBtn');
 const resetHighscoresBtn = document.getElementById('resetHighscoresBtn');
@@ -297,10 +298,10 @@ showScreen('landing');
 
 // Settings panel behavior
 function openSettings() {
-  if (settingsPanel) settingsPanel.classList.remove('hidden');
+  if (settingsModal) settingsModal.classList.remove('hidden');
 }
 function closeSettings() {
-  if (settingsPanel) settingsPanel.classList.add('hidden');
+  if (settingsModal) settingsModal.classList.add('hidden');
 }
 
 if (openSettingsBtn) openSettingsBtn.addEventListener('click', () => {
@@ -334,4 +335,11 @@ if (resetHighscoresBtn) resetHighscoresBtn.addEventListener('click', () => {
     alert('Failed to reset highscores');
   }
 });
+
+// Close modal when clicking outside the settings panel
+if (settingsModal) {
+  settingsModal.addEventListener('click', (e) => {
+    if (e.target === settingsModal) closeSettings();
+  });
+}
 
