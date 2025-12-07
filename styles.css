@@ -20,6 +20,10 @@ html,body{height:100%;margin:0;font-family:Inter, Roboto, Arial, sans-serif;back
 .landing-controls{display:flex;justify-content:center;margin-bottom:12px}
 .settings-panel{max-width:520px;margin:0 auto 14px;padding:14px;border-radius:10px;background:var(--card);box-shadow:0 6px 18px rgba(0,0,0,0.06);text-align:center}
 
+/* Left retractable settings panel */
+.left-panel{position:fixed;left:0;top:0;bottom:0;width:300px;max-width:80%;padding:18px;box-shadow:2px 0 18px rgba(0,0,0,0.12);border-radius:0 14px 14px 0;transform:translateX(-100%);transition:transform 240ms ease;z-index:95;background:var(--card)}
+.left-panel.open{transform:translateX(0)}
+
 /* Modal overlay */
 .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);z-index:90;padding:20px}
 .modal .settings-panel{margin:0;max-width:520px}

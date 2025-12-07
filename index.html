@@ -8,30 +8,29 @@
 </head>
 <body>
   <div id="app">
+    <!-- Left retractable settings panel (hidden by default) -->
+    <div id="settingsPanel" class="settings-panel left-panel">
+      <h3>Configuration</h3>
+      <label class="setting-item">Questions per module:
+        <input id="numQuestionsInput" type="number" min="1" max="100" value="10">
+      </label>
+      <label class="setting-item">Time per question (seconds):
+        <input id="timePerQuestionInput" type="number" min="1" max="60" value="10">
+      </label>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:center">
+        <button id="saveSettingsBtn" class="btn small">Save</button>
+        <button id="closeSettingsBtn" class="btn small">Close</button>
+        <button id="resetHighscoresBtn" class="btn small" style="background:#888">Reset High Scores</button>
+      </div>
+      <div class="settings-note">Changes saved and persist on refresh.</div>
+    </div>
+
     <!-- Landing -->
     <section id="landing" class="screen">
       <h1 class="title">Math Games</h1>
       <p class="subtitle">Choose a game and have fun!</p>
       <div class="landing-controls">
         <button id="openSettingsBtn" class="btn small">Settings</button>
-      </div>
-
-      <div id="settingsModal" class="modal hidden">
-        <div id="settingsPanel" class="settings-panel">
-          <h3>Configuration</h3>
-          <label class="setting-item">Questions per module:
-            <input id="numQuestionsInput" type="number" min="1" max="100" value="10">
-          </label>
-          <label class="setting-item">Time per question (seconds):
-            <input id="timePerQuestionInput" type="number" min="1" max="60" value="10">
-          </label>
-          <div style="margin-top:12px;display:flex;gap:8px;justify-content:center">
-            <button id="saveSettingsBtn" class="btn small">Save</button>
-            <button id="closeSettingsBtn" class="btn small">Close</button>
-            <button id="resetHighscoresBtn" class="btn small" style="background:#888">Reset High Scores</button>
-          </div>
-          <div class="settings-note">Changes saved and persist on refresh.</div>
-        </div>
       </div>
 
       <div id="modules" class="modules"></div>

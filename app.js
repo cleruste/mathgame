@@ -57,7 +57,6 @@ const numQuestionsInput = document.getElementById('numQuestionsInput');
 const timePerQuestionInput = document.getElementById('timePerQuestionInput');
 const openSettingsBtn = document.getElementById('openSettingsBtn');
 const settingsPanel = document.getElementById('settingsPanel');
-const settingsModal = document.getElementById('settingsModal');
 const saveSettingsBtn = document.getElementById('saveSettingsBtn');
 const closeSettingsBtn = document.getElementById('closeSettingsBtn');
 const resetHighscoresBtn = document.getElementById('resetHighscoresBtn');
@@ -245,31 +244,9 @@ function handleKey(k) {
   updateInputDisplay();
 }
 
-// Keyboard support
-window.addEventListener('keydown', (e) => {
-  if (landingEl.classList.contains('hidden') && !resultsEl.classList.contains('hidden')) return;
-  if (resultsEl.classList.contains('hidden') && !landingEl.classList.contains('hidden')) return;
-  if (gameEl.classList.contains('hidden')) return;
-  if (e.key >= '0' && e.key <= '9') {
-    handleKey(e.key);
-  } else if (e.key === 'Backspace') {
-    handleKey('←');
-  } else if (e.key === 'Enter') {
-    handleKey('OK');
-  }
-});
+// Keyboard support and navigation handlers are attached after DOM is ready
 
-// Navigation
-backBtn.addEventListener('click', () => {
-  stopTimer();
-  showScreen('landing');
-});
-returnHomeBtn.addEventListener('click', () => {
-  showScreen('landing');
-});
-
-// Boot
-// Initialize settings UI and boot the app
+// Boot and settings initialization after DOM is ready
 function initSettings() {
   try {
     if (numQuestionsInput) {
@@ -291,55 +268,90 @@ function initSettings() {
   }
 }
 
-initSettings();
-renderModules();
-createNumpad();
-showScreen('landing');
-
-// Settings panel behavior
-function openSettings() {
-  if (settingsModal) settingsModal.classList.remove('hidden');
-}
-function closeSettings() {
-  if (settingsModal) settingsModal.classList.add('hidden');
-}
-
-if (openSettingsBtn) openSettingsBtn.addEventListener('click', () => {
-  // refresh inputs
-  if (numQuestionsInput) numQuestionsInput.value = String(getNumQuestions());
-  if (timePerQuestionInput) timePerQuestionInput.value = String(getTimePerQuestionSec());
-  openSettings();
-});
-if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', () => closeSettings());
-if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', () => {
-  // save current input values and re-render modules
-  if (numQuestionsInput) setNumQuestions(Number(numQuestionsInput.value) || DEFAULT_QUESTIONS_PER_MODULE);
-  if (timePerQuestionInput) setTimePerQuestionSec(Number(timePerQuestionInput.value) || DEFAULT_TIME_PER_QUESTION_SEC);
+document.addEventListener('DOMContentLoaded', () => {
+  // initialize settings inputs and UI
+  initSettings();
   renderModules();
-  closeSettings();
-});
+  createNumpad();
+  showScreen('landing');
 
-if (resetHighscoresBtn) resetHighscoresBtn.addEventListener('click', () => {
-  if (!confirm('Reset all high scores? This cannot be undone.')) return;
-  try {
-    const prefix = 'mathgame_highscore_';
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith(prefix)) keysToRemove.push(key);
-    }
-    keysToRemove.forEach(k => localStorage.removeItem(k));
-    alert('High scores reset.');
-  } catch (e) {
-    console.error('Failed to reset highscores', e);
-    alert('Failed to reset highscores');
+  // ensure settings panel is closed on load
+  if (settingsPanel) settingsPanel.classList.remove('open');
+
+  // Settings panel behavior (defined inside DOMContentLoaded so elements exist)
+  function openSettings() {
+    if (settingsPanel) settingsPanel.classList.add('open');
   }
-});
+  function closeSettings() {
+    if (settingsPanel) settingsPanel.classList.remove('open');
+  }
 
-// Close modal when clicking outside the settings panel
-if (settingsModal) {
-  settingsModal.addEventListener('click', (e) => {
-    if (e.target === settingsModal) closeSettings();
+  if (openSettingsBtn) openSettingsBtn.addEventListener('click', () => {
+    // refresh inputs
+    if (numQuestionsInput) numQuestionsInput.value = String(getNumQuestions());
+    if (timePerQuestionInput) timePerQuestionInput.value = String(getTimePerQuestionSec());
+    openSettings();
   });
-}
+
+  if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    closeSettings();
+  });
+
+  if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    // save current input values and re-render modules
+    if (numQuestionsInput) setNumQuestions(Number(numQuestionsInput.value) || DEFAULT_QUESTIONS_PER_MODULE);
+    if (timePerQuestionInput) setTimePerQuestionSec(Number(timePerQuestionInput.value) || DEFAULT_TIME_PER_QUESTION_SEC);
+    renderModules();
+    closeSettings();
+  });
+
+  if (resetHighscoresBtn) resetHighscoresBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!confirm('Reset all high scores? This cannot be undone.')) return;
+    try {
+      const prefix = 'mathgame_highscore_';
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(prefix)) keysToRemove.push(key);
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+      alert('High scores reset.');
+    } catch (err) {
+      console.error('Failed to reset highscores', err);
+      alert('Failed to reset highscores');
+    }
+  });
+
+  // (no overlay) clicking outside is handled by layout; panel slides in/out from left
+
+  // Keyboard support (only when game screen is visible)
+  window.addEventListener('keydown', (e) => {
+    // if necessary elements are missing, ignore
+    if (!landingEl || !resultsEl || !gameEl) return;
+    // if results screen visible, ignore
+    if (!landingEl.classList.contains('hidden') && resultsEl.classList.contains('hidden')) return;
+    // if game not visible, ignore
+    if (gameEl.classList.contains('hidden')) return;
+    if (e.key >= '0' && e.key <= '9') {
+      handleKey(e.key);
+    } else if (e.key === 'Backspace') {
+      handleKey('←');
+    } else if (e.key === 'Enter') {
+      handleKey('OK');
+    } else if (e.key === 'Escape') {
+      // close settings panel if open
+      if (settingsPanel && settingsPanel.classList.contains('open')) closeSettings();
+    }
+  });
+
+  // Navigation buttons
+  if (backBtn) backBtn.addEventListener('click', () => {
+    stopTimer();
+    showScreen('landing');
+  });
+  if (returnHomeBtn) returnHomeBtn.addEventListener('click', () => showScreen('landing'));
+});
 
