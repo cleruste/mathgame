@@ -14,6 +14,13 @@
       <label class="setting-item">Questions per module:
         <input id="numQuestionsInput" type="number" min="1" max="100" value="10">
       </label>
+      <label class="setting-item">Difficulty:
+        <select id="difficultySelect">
+          <option value="0">Easy</option>
+          <option value="1" selected>Medium</option>
+          <option value="2">Hard</option>
+        </select>
+      </label>
       <label class="setting-item">Time per question (seconds):
         <input id="timePerQuestionInput" type="number" min="1" max="60" value="10">
       </label>
@@ -32,6 +39,8 @@
       <div class="landing-controls">
         <button id="openSettingsBtn" class="btn small">Settings</button>
       </div>
+
+      <!-- settings panel is a left retractable panel; difficulty control is here -->
 
       <div id="modules" class="modules"></div>
     </section>

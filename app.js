@@ -5,6 +5,17 @@
 // Configuration (defaults are used if no saved preference exists)
 const DEFAULT_QUESTIONS_PER_MODULE = 10;
 const DEFAULT_TIME_PER_QUESTION_SEC = 10; // seconds
+const DEFAULT_DIFFICULTY = 1; // 0=easy,1=medium,2=hard
+
+function getDifficulty() {
+  return Number(localStorage.getItem('mathgame_difficulty') || DEFAULT_DIFFICULTY);
+}
+function setDifficulty(d) {
+  // Avoid treating 0 as falsy when using `||` — explicitly coerce and validate
+  const n = Number(d);
+  const v = Number.isFinite(n) ? Math.max(0, Math.min(2, Math.floor(n))) : DEFAULT_DIFFICULTY;
+  localStorage.setItem('mathgame_difficulty', String(v));
+}
 
 function getNumQuestions() {
   return Number(localStorage.getItem('mathgame_num_questions') || DEFAULT_QUESTIONS_PER_MODULE);
@@ -26,11 +37,86 @@ function getTimePerQuestionMs() {
   return getTimePerQuestionSec() * 1000;
 }
 
+/**
+ * Count carry operations for grade-school addition/subtraction/multiplication.
+ * This version is used by the modules to choose numbers that produce a
+ * specific number of carry events for addition.
+ */
+function countCarryOperations(a, b, op) {
+  const A = Math.abs(Math.floor(Number(a) || 0));
+  const B = Math.abs(Math.floor(Number(b) || 0));
+  const operator = String(op).trim();
+  const toDigits = n => String(n).split('').reverse().map(d => Number(d));
+
+  if (operator === '+') {
+    const da = toDigits(A);
+    const db = toDigits(B);
+    const n = Math.max(da.length, db.length);
+    let carry = 0;
+    let carryCount = 0;
+    for (let i = 0; i < n; i++) {
+      const s = (da[i] || 0) + (db[i] || 0) + carry;
+      if (s >= 10) {
+        carry = Math.floor(s / 10);
+        carryCount += 1;
+      } else {
+        carry = 0;
+      }
+    }
+    return carryCount;
+  }
+
+  if (operator === '-') {
+    const minuend = Math.max(A, B);
+    const subtrahend = Math.min(A, B);
+    const da = toDigits(minuend);
+    const db = toDigits(subtrahend);
+    const n = da.length;
+    let borrow = 0;
+    let borrowCount = 0;
+    for (let i = 0; i < n; i++) {
+      const ai = da[i] || 0;
+      const bi = db[i] || 0;
+      if ((ai - borrow) < bi) {
+        borrow = 1;
+        borrowCount += 1;
+      } else {
+        borrow = 0;
+      }
+    }
+    return borrowCount;
+  }
+
+  if (operator === 'x' || operator === '*') {
+    if (A === 0 || B === 0) return 0;
+    const da = toDigits(A);
+    const db = toDigits(B);
+    const res = new Array(da.length + db.length).fill(0);
+    for (let i = 0; i < da.length; i++) {
+      for (let j = 0; j < db.length; j++) {
+        res[i + j] += da[i] * db[j];
+      }
+    }
+    let carry = 0;
+    let carryCount = 0;
+    for (let k = 0; k < res.length; k++) {
+      const total = res[k] + carry;
+      const nextCarry = Math.floor(total / 10);
+      if (nextCarry > 0) carryCount += 1;
+      carry = nextCarry;
+    }
+    return carryCount;
+  }
+
+  throw new Error("Unsupported operator: use '+', '-' or 'x' (or '*').");
+}
+
 // App state
 let state = {
   module: null,
   questionIndex: 0,
   score: 0,
+  correctCount: 0,
   currentAnswer: '',
   currentCorrectAnswer: '',
   timer: null,
@@ -66,41 +152,86 @@ const resetHighscoresBtn = document.getElementById('resetHighscoresBtn');
 // { id, title, generateQuestion() } where generateQuestion returns { text, answer }
 const modules = [
   {
-    id: 'addition_1_100',
-    title: 'Add numbers (1 to 100)',
+    id: 'addition',
+    title: 'Add numbers',
     generateQuestion() {
-      const a = Math.floor(Math.random() * 100) + 1;
-      const b = Math.floor(Math.random() * 100) + 1;
-      return { text: `${a} + ${b} = ?`, answer: String(a + b) };
+      // generate until the number of carry operations equals selected difficulty
+      const targetCarries = getDifficulty();
+      let a, b, sum, carries;
+      let attempts = 0;
+      const MAX_ATTEMPTS = 10000;
+      do {
+        a = Math.floor(Math.random() * 1000) + 1;
+        b = Math.floor(Math.random() * 1000) + 1;
+        sum = a + b;
+        carries = countCarryOperations(a, b, '+');
+        attempts += 1;
+        if (attempts >= MAX_ATTEMPTS) break;
+      } while (carries > targetCarries);
+      if (carries > targetCarries) console.warn(`addition generator: gave up after ${attempts} attempts (target ${targetCarries}, got ${carries})`);
+      return { text: `${a} + ${b} = ?`, answer: String(sum) };
     }
   },
   {
-    id: 'subtract_1_100',
-    title: 'Subtract numbers (1 to 100)',
+    id: 'subtract',
+    title: 'Subtract numbers',
     generateQuestion() {
-      const a = Math.floor(Math.random() * 100) + 1;
-      const b = Math.floor(Math.random() * 100) + 1;
-      return { text: `${a} - ${b} = ?`, answer: String(a - b) };
+      // generate until number of borrow operations equals selected difficulty
+      // ensure a >= b so result is non-negative
+      const targetBorrows = getDifficulty();
+      let a, b, result, borrows;
+      let attempts = 0;
+      const MAX_ATTEMPTS = 10000;
+      do {
+        a = Math.floor(Math.random() * 1000) + 1;
+        b = Math.floor(Math.random() * 1000) + 1;
+        if (a < b) {
+          const t = a; a = b; b = t;
+        }
+        result = a - b;
+        borrows = countCarryOperations(a, b, '-');
+        attempts += 1;
+        if (attempts >= MAX_ATTEMPTS) break;
+      } while (borrows > targetBorrows);
+      if (borrows > targetBorrows) console.warn(`subtract generator: gave up after ${attempts} attempts (target ${targetBorrows}, got ${borrows})`);
+      return { text: `${a} - ${b} = ?`, answer: String(result) };
     }
   },
   {
-    id: 'multiply_1_12',
-    title: 'Multiply (1 to 12)',
+    id: 'multiply',
+    title: 'Multiply',
     generateQuestion() {
-      const a = Math.floor(Math.random() * 12) + 1;
-      const b = Math.floor(Math.random() * 12) + 1;
-      return { text: `${a} × ${b} = ?`, answer: String(a * b) };
+      // generate until the number of carry operations equals selected difficulty
+      const targetCarries = getDifficulty();
+      let a, b, product, carries;
+      let attempts = 0;
+      const MAX_ATTEMPTS = 10000;
+      do {
+        a = Math.floor(Math.random() * 50) + 1;
+        b = Math.floor(Math.random() * 50) + 1;
+        product = a * b;
+        carries = countCarryOperations(a, b, 'x');
+        attempts += 1;
+        if (attempts >= MAX_ATTEMPTS) break;
+      } while (carries > targetCarries);
+      if (carries > targetCarries) console.warn(`addition generator: gave up after ${attempts} attempts (target ${targetCarries}, got ${carries})`);
+      return { text: `${a} x ${b} = ?`, answer: String(product) };
     }
   }
 ];
 
 function renderModules() {
   modulesEl.innerHTML = '';
+  const diffLabels = ['Easy','Medium','Hard'];
   modules.forEach(m => {
     const card = document.createElement('div');
     card.className = 'module-card';
     card.tabIndex = 0;
-    card.innerHTML = `<h3>${m.title}</h3><p>${getNumQuestions()} questions • ${getTimePerQuestionSec()}s each</p>`;
+    const d = getDifficulty();
+    const diffText = diffLabels[d] || 'Medium';
+    const diffClass = d === 0 ? 'diff-easy' : (d === 2 ? 'diff-hard' : '');
+    const diffHtml = diffClass ? `<span class="${diffClass}">${diffText}</span>` : diffText;
+    card.innerHTML = `<h3>${m.title}</h3><p>${getNumQuestions()} questions • ${getTimePerQuestionSec()}s each • ${diffHtml}</p>`;
     card.addEventListener('click', () => startModule(m));
     card.addEventListener('keydown', (e) => { if (e.key === 'Enter') startModule(m); });
     modulesEl.appendChild(card);
@@ -111,6 +242,7 @@ function startModule(module) {
   state.module = module;
   state.questionIndex = 0;
   state.score = 0;
+  state.correctCount = 0;
   showScreen('game');
   moduleTitleEl.textContent = module.title;
   scoreDisplayEl.textContent = `Score: ${state.score}`;
@@ -168,13 +300,22 @@ function submitAnswer(provided = null, timedOut = false) {
   stopTimer();
   const answer = timedOut ? null : (provided !== null ? String(provided) : state.currentAnswer);
   let correct = false;
+  let points = 0;
   if (answer !== null && answer === state.currentCorrectAnswer) {
     correct = true;
-    state.score += 1;
+    // compute elapsed time in seconds
+    const elapsedMs = Date.now() - state.timerStart;
+    const gracePeriod = 3; // 3 seconds grace period
+    const t = Math.max(0, elapsedMs / 1000 - gracePeriod);
+    // score for this question: int(10 * 10^(-t/10))
+    points = Math.floor(10 * Math.pow(10, -t / 10));
+    if (!Number.isFinite(points) || points < 0) points = 0;
+    state.score += points;
+    state.correctCount = (state.correctCount || 0) + 1;
     scoreDisplayEl.textContent = `Score: ${state.score}`;
   }
 
-  showFeedback(correct, timedOut);
+  showFeedback(correct, timedOut, points);
 
   setTimeout(() => {
     state.isWaiting = false;
@@ -182,11 +323,12 @@ function submitAnswer(provided = null, timedOut = false) {
   }, 900);
 }
 
-function showFeedback(correct, timedOut) {
+function showFeedback(correct, timedOut, points = 0) {
   feedbackEl.classList.remove('hidden');
   if (correct) {
     feedbackEl.className = 'feedback success';
-    feedbackEl.textContent = 'Correct!';
+    // show points earned when correct
+    feedbackEl.textContent = `Correct! +${points} points`;
   } else if (timedOut) {
     feedbackEl.className = 'feedback error';
     feedbackEl.textContent = `Time's up! Answer: ${state.currentCorrectAnswer}`;
@@ -199,8 +341,8 @@ function showFeedback(correct, timedOut) {
 function finishModule() {
   showScreen('results');
   const totalQ = getNumQuestions();
-  const percent = Math.round((state.score / totalQ) * 100);
-  resultsTextEl.textContent = `You got ${state.score} out of ${totalQ} — ${percent}%`;
+  // show points-based score and number of correct answers
+  resultsTextEl.textContent = `You scored ${state.score} points (${state.correctCount || 0} / ${totalQ} correct)`;
   // Save high score per-module in localStorage
   try {
     const key = `mathgame_highscore_${state.module.id}`;
@@ -208,11 +350,11 @@ function finishModule() {
     if (state.score > prev) {
       localStorage.setItem(key, String(state.score));
     }
-    const best = localStorage.getItem(key);
+    const best = localStorage.getItem(key) || '0';
     const bestEl = document.createElement('div');
     bestEl.style.marginTop = '8px';
     bestEl.style.fontWeight = '700';
-    bestEl.textContent = `Best for this module: ${best} / ${getNumQuestions()}`;
+    bestEl.textContent = `Best for this module: ${best} points`;
     resultsTextEl.appendChild(bestEl);
   } catch (e) { /* ignore storage errors */ }
 }
@@ -263,6 +405,16 @@ function initSettings() {
         setTimePerQuestionSec(Math.max(1, Math.floor(v)));
       });
     }
+    // difficulty select
+    const difficultySelect = document.getElementById('difficultySelect');
+    if (difficultySelect) {
+      difficultySelect.value = String(getDifficulty());
+      difficultySelect.addEventListener('change', (e) => {
+        setDifficulty(Number(e.target.value));
+        // reflect change in module cards immediately
+        renderModules();
+      });
+    }
   } catch (err) {
     console.error('Settings initialization failed', err);
   }
@@ -303,6 +455,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // save current input values and re-render modules
     if (numQuestionsInput) setNumQuestions(Number(numQuestionsInput.value) || DEFAULT_QUESTIONS_PER_MODULE);
     if (timePerQuestionInput) setTimePerQuestionSec(Number(timePerQuestionInput.value) || DEFAULT_TIME_PER_QUESTION_SEC);
+    // also persist difficulty in case the select change event didn't fire
+    const difficultySelect = document.getElementById('difficultySelect');
+    if (difficultySelect) setDifficulty(Number(difficultySelect.value));
     renderModules();
     closeSettings();
   });
